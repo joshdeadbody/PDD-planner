@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://generativelanguage.googleapis.com;">
+
     <title>Process Assessment Tool</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -448,6 +448,128 @@
             border-top: 1px solid var(--border);
             margin: 0.5rem 0 1.25rem;
         }
+
+        /* ── Toggle Switch & Config Bar ── */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #FFFFFF;
+            background: var(--navy);
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .switch-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 16px;
+            border-left: 1px solid var(--border);
+            padding-left: 16px;
+            vertical-align: middle;
+        }
+
+        .switch {
+            position: relative;
+            display: flex;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #D0CEC9;
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #FFFFFF;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        input:checked+.slider {
+            background-color: var(--amber);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 12px;
+            width: 100%;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .config-field label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .config-field input {
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+        }
+
+        .btn-icon-danger {
+            background: var(--surface);
+            border: 1px solid var(--border-input);
+            color: var(--text-muted);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-icon-danger:hover {
+            border-color: var(--danger);
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -743,16 +865,51 @@
 
     <!-- AI REVIEW -->
     <div class="card section ai-section">
-        <h2>AI Reviewer</h2>
-        <p class="ai-desc">Submit all scores and notes to Gemini for a narrative interpretation and final recommendation based on both hard scores and contextual notes.</p>
-        <div class="api-key-row">
-            <input type="password" id="api_key" placeholder="Enter Gemini API Key..." autocomplete="new-password">
-            <button class="btn" id="btn_analyze">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                Generate Recommendation
-            </button>
+        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+            <h2 style="margin-bottom: 0; padding-left: 0.875rem; border-left: 3px solid var(--amber);">AI Reviewer <span id="proxyBadge" class="status-badge">Proxy</span></h2>
+            <div class="switch-wrap">
+                <label for="keyToggle" style="font-size:10px; font-weight:600; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer;">Custom Key</label>
+                <label class="switch">
+                    <input type="checkbox" id="keyToggle" onchange="toggleManualKey()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <p class="ai-desc" style="padding-left: 0.875rem;">Submit all scores and notes to the AI for a narrative interpretation and final recommendation based on both hard scores and contextual notes.</p>
+        
+        <div class="api-key-bar hidden" id="apiKeyBar">
+            <div class="config-grid">
+                <div class="config-field">
+                    <label>Endpoint URL (OpenAI Compatible)</label>
+                    <input type="text" id="customEndpoint" placeholder="https://api.openai.com/v1/chat/completions">
+                </div>
+                <div class="config-field">
+                    <label>Manual API Key</label>
+                    <input type="password" id="api_key" placeholder="sk-..." autocomplete="new-password" spellcheck="false">
+                </div>
+                <div class="config-field">
+                    <label>Model Name</label>
+                    <input type="text" id="customModel" placeholder="gpt-4o">
+                </div>
+                <div class="config-field">
+                    <button class="btn-icon-danger" onclick="clearApiKey()" title="Reset to Proxy/Clear" style="height: 35px; width: 35px; padding:0;">×</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" id="btn_analyze">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Generate Recommendation
+        </button>
+        <div id="proxy-fallback-msg" class="hidden" style="margin-top: 10px; padding: 10px 15px; font-size: 12px; color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 3px;">
+            Connection failed. Please <a href="#" onclick="document.getElementById('keyToggle').click(); return false;" style="color: var(--danger); font-weight: 600; text-decoration: underline;">provide your own Custom API Key</a> to continue.
         </div>
         <div id="ai-response"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align: center; margin-top: 3rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">
+        Built by Tutuianu Joshua
     </div>
 
 </div>
@@ -937,7 +1094,7 @@
             context:     context
         });
 
-        window.open('PDD planer.html?' + params.toString(), '_blank');
+        window.open('PDD planer improved.html?' + params.toString(), '_blank');
     }
 
     // ── AI Integration ────────────────────────────────────────────
@@ -945,14 +1102,67 @@
     const btn = document.getElementById('btn_analyze');
     const originalBtnHTML = btn.innerHTML;
 
+    // --- CONFIGURATION ---
+    const PROXY_URL = 'https://nameless-sky-595c.joshuatutuianu128.workers.dev/';
+
+    const savedKey = localStorage.getItem('gemini_api_key');
+    const savedUrl = localStorage.getItem('custom_endpoint');
+    const savedModel = localStorage.getItem('custom_model');
+
+    if (savedKey) document.getElementById('api_key').value = savedKey;
+    if (savedUrl) document.getElementById('customEndpoint').value = savedUrl;
+    if (savedModel) document.getElementById('customModel').value = savedModel;
+
+    function updateProxyStatus() {
+        const isManual = document.getElementById('keyToggle').checked;
+        const badge = document.getElementById('proxyBadge');
+        if (badge) {
+            badge.textContent = isManual ? 'Custom API' : 'Proxy Active';
+            badge.style.background = isManual ? 'var(--warning)' : 'var(--navy)';
+        }
+    }
+
+    ['api_key', 'customEndpoint', 'customModel'].forEach(id => {
+        document.getElementById(id).addEventListener('input', e => {
+            const key = id === 'api_key' ? 'gemini_api_key' : id === 'customEndpoint' ? 'custom_endpoint' : 'custom_model';
+            localStorage.setItem(key, e.target.value.trim());
+            updateProxyStatus();
+        });
+    });
+
+    function toggleManualKey() {
+        const bar = document.getElementById('apiKeyBar');
+        const isChecked = document.getElementById('keyToggle').checked;
+        bar.classList.toggle('hidden', !isChecked);
+        updateProxyStatus();
+    }
+
+    function clearApiKey() {
+        if(!confirm('Reset custom configuration to defaults?')) return;
+        document.getElementById('api_key').value = '';
+        document.getElementById('customEndpoint').value = '';
+        document.getElementById('customModel').value = '';
+        localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('custom_endpoint');
+        localStorage.removeItem('custom_model');
+        updateProxyStatus();
+        alert('Configuration cleared.');
+    }
+
+    updateProxyStatus();
+
     btn.addEventListener('click', async () => {
         if (isSubmitting) return;
 
+        const customUrl  = document.getElementById('customEndpoint').value.trim();
         const apiKey     = document.getElementById('api_key').value.trim();
+        const customModel= document.getElementById('customModel').value.trim();
         const responseDiv = document.getElementById('ai-response');
+        const useProxy   = !document.getElementById('keyToggle').checked;
 
-        if (!apiKey) {
-            alert("Please enter your Gemini API Key.");
+        if (useProxy && (!PROXY_URL || PROXY_URL.includes('your-worker-name'))) {
+            document.getElementById('keyToggle').click();
+            alert("Please configure the Proxy URL or provide a Custom API Key.");
             return;
         }
 
@@ -973,7 +1183,8 @@
         btn.disabled = true;
         btn.innerText = 'Analyzing...';
         responseDiv.style.display = 'block';
-        responseDiv.innerText = 'Connecting to Gemini API...';
+        responseDiv.innerHTML = 'Connecting to AI...';
+        document.getElementById('proxy-fallback-msg').classList.add('hidden');
 
         let contextData = "Process Assessment Data:\n\n";
 
@@ -1001,24 +1212,55 @@ Provide a narrative interpretation of the results, flag any risks the hard score
 ${contextData}`;
 
         try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const res = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+            let endpoint, body;
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error?.message || 'API Request Failed');
+            if (useProxy) {
+                endpoint = PROXY_URL;
+                body = {
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 8000 }
+                };
+            } else {
+                endpoint = customUrl || 'https://api.openai.com/v1/chat/completions';
+                body = {
+                    model: customModel || 'gpt-4o',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7
+                };
             }
 
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(useProxy ? {} : { 'Authorization': `Bearer ${apiKey}` })
+                },
+                body: JSON.stringify(body)
+            });
+
             const data = await res.json();
-            responseDiv.innerText = data.candidates[0].content.parts[0].text;
+
+            if (data.error) {
+                throw new Error(data.error.message || JSON.stringify(data.error));
+            }
+
+            let reply = '';
+            if (useProxy) {
+                reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+            } else {
+                reply = data.choices?.[0]?.message?.content || data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+            }
+
+            reply = reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            reply = reply.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            reply = reply.replace(/\n/g, '<br>');
+
+            responseDiv.innerHTML = reply;
+
         } catch (error) {
-            responseDiv.innerText = 'Error: ' + error.message;
+            console.error(error);
+            responseDiv.innerHTML = '<em>Error processing request.</em>';
+            if (useProxy) document.getElementById('proxy-fallback-msg').classList.remove('hidden');
         } finally {
             isSubmitting = false;
             btn.disabled = false;
