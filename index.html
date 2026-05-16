@@ -1290,7 +1290,7 @@ ${contextData}`;
             reply = reply.replace(/\*(.*?)\*/g, '<em>$1</em>');
             reply = reply.replace(/\n/g, '<br>');
 
-            responseDiv.innerHTML = reply;
+            responseDiv.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(reply) : reply;
 
         } catch (error) {
             console.error(error);
@@ -1302,6 +1302,12 @@ ${contextData}`;
             btn.innerHTML = originalBtnHTML;
         }
     });
+
+</script>
+
+</body>
+</html>
+  });
 
 </script>
 
