@@ -887,6 +887,10 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                 Send to Agentic Planner
             </button>
+            <button type="button" class="btn-roi" id="btn_send_roi" onclick="sendToROI()" style="background: var(--success); color: white; border: none; padding: 0.65rem 1.375rem; border-radius: 3px; font-weight: 600; font-size: 0.875rem; font-family: var(--font); cursor: pointer; transition: background 0.15s ease; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                Build Business Case
+            </button>
         </div>
     </div>
 
@@ -1130,6 +1134,11 @@
     function sendToAgent() {
         const params = getAssessmentParams();
         window.open('Agentic Automation Planner.html?' + params.toString(), '_blank');
+    }
+
+    function sendToROI() {
+        const params = getAssessmentParams();
+        window.open('Business_Case_Builder.html?' + params.toString(), '_blank');
     }
 
     // ── AI Integration ────────────────────────────────────────────
